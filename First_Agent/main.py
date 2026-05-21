@@ -28,7 +28,8 @@ client=InferenceClient(model="moonshotai/Kimi-K2.5",token=HF_TOKEN)
 
 ## MAKING A SYSTEM PROMPT 
 
-
+def get_time():
+    return "The current time is 08:08"
 
 def get_pokemon_info(name):
     url = f"https://pokeapi.co/api/v2/pokemon/{name}/"
@@ -52,11 +53,21 @@ def get_pokemon_info(name):
 SYSTEM_PROMPT = """ You are a helpful assistant that provides accurate and concise information to the user.
 You have acess to following tools: 
 
+get_time(): This tool returns the current time when called. You can use this tool to answer any questions related to time.
+
 get_pokemon_info(name): This tool takes the name of a pokemon as input and returns its information such as name, id, height, type and abilities.
 When the user asks for information about a pokemon, you should use the get_pokemon_info tool to fetch the information and provide it to the user.
+
 The way you use the tools is by specifying a json blob.
 Specifically, this json should have an `action` key (with the name of the tool to use) and an `action_input` key (with the input to the tool going here).
+
+for example, if the user asks for the current time, you should respond with the following json:
+{{
+    "action": "get_time"
+}}
+
 For example, if the user asks for information about pikachu, you should respond with the following json:
+
 
 {{
     "action": "get_pokemon_info",
@@ -70,8 +81,10 @@ Thought: you should always think about one action to take. Only one action at a 
 Action:
 
 $JSON_BLOB (inside markdown cell)
+
 Observation: the result of the action. This Observation is unique, complete, and the source of truth.
-(this Thought/Action/Observation can repeat N times, you should take several steps when needed. The $JSON_BLOB must be formatted as markdown and only use a SINGLE action at a time.)
+(this Thought/Action/Observation can repeat N times, you should take several steps when needed. 
+The $JSON_BLOB must be formatted as markdown and only use a SINGLE action at a time.)
 
 You must always end your output with the following format:
 
@@ -82,7 +95,7 @@ Now begin! Reminder to ALWAYS use the exact characters `Final Answer:` when you 
  """
 # messages = [
 #     {"role": "system", "content": SYSTEM_PROMPT},
-#     {"role": "user", "content": "Tell me about Charmander."},
+#     {"role": "user", "content": "Tell me  about mew"},
 # ]
 
 # output = client.chat.completions.create(
@@ -93,9 +106,11 @@ Now begin! Reminder to ALWAYS use the exact characters `Final Answer:` when you 
 # )
 # print(output.choices[0].message.content)  # here the model is hallucinating and giving info by itself instead of calling the tool. 
 
+
+# here is the block for time quesion 
 messages = [
     {"role": "system", "content": SYSTEM_PROMPT},
-    {"role": "user", "content": "Tell me about Mewtwo."},
+    {"role": "user", "content": " Tell mewhat time is it now."},
 ]   
 
 output = client.chat.completions.create(
@@ -105,13 +120,60 @@ output = client.chat.completions.create(
     extra_body={'thinking': {'type': 'disabled'}},
 )
 
-print(output.choices[0].message.content)
+# print(output.choices[0].message.content)
 
 messages=[
     {"role": "system", "content": SYSTEM_PROMPT},
-    {"role": "user", "content": "Tell me about Mewtwo."},
-    {"role": "assistant", "content": output.choices[0].message.content + "Observation:" + str(get_pokemon_info('mewtwo'))},
+    {"role": "user", "content": "Tell me what time is it now."},
+    {"role": "assistant", "content": output.choices[0].message.content + "Observation:" + str(get_time())},
 ]
+
+output = client.chat.completions.create(
+    messages=messages,
+    max_tokens=150,
+    stop=["Final Answer:"], # Let's stop before the final answer is given, so we can see the thought process.
+    extra_body={'thinking': {'type': 'disabled'}},      
+
+)
+print(output.choices[0].message.content)
+
+
+
+
+
+# here is the block for pokemon question
+messages = [
+    {"role": "system", "content": SYSTEM_PROMPT},
+    {"role": "user", "content": "Tell me about Metapod"},
+]
+
+output = client.chat.completions.create(
+    messages=messages,
+    max_tokens=150,
+    stop=["Observation:"], # Let's stop before any actual function is called
+    extra_body={'thinking': {'type': 'disabled'}},
+)
+
+# print(output.choices[0].message.content)
+
+messages=[
+    {"role": "system", "content": SYSTEM_PROMPT},
+    {"role": "user", "content": "Tell me about Metapod"},
+    {"role": "assistant", "content": output.choices[0].message.content + "Observation:" + str(get_pokemon_info("Metapod"))}, #manual observation
+]
+
+output = client.chat.completions.create(
+    messages=messages,
+    max_tokens=150,
+    stop=["Final Answer:"], # Let's stop before the final answer is given, so we can see the thought process.
+    extra_body={'thinking': {'type': 'disabled'}},      
+
+)
+print(output.choices[0].message.content)
+
+
+
+
 
 # i purposely added the observation as the output of the function call to show that the model can use the observation to come to a final answer.
 # i purposely made the height of the pokemon wrong to check that the model can use the observation to come to a final answer.
