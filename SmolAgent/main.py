@@ -1,6 +1,10 @@
-def main():
-    print("Hello from smolagent!")
+from smolagents import CodeAgent, DuckDuckGoSearchTool, FinalAnswerTool, InferenceClientModel, load_tool, tool
+import datetime
+import requests
+import pytz
+import yaml
+import os 
+from dotenv import  load_dotenv
 
-
-if __name__ == "__main__":
-    main()
+load_dotenv()
+HF_TOKEN= os.getenv("HF_TOKEN")
