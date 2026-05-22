@@ -172,8 +172,5 @@ output = client.chat.completions.create(
 print(output.choices[0].message.content)
 
 
-
-
-
 # i purposely added the observation as the output of the function call to show that the model can use the observation to come to a final answer.
 # i purposely made the height of the pokemon wrong to check that the model can use the observation to come to a final answer.
